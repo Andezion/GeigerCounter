@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../services/audio_service.dart';
-import '../widgets/rad_indicator.dart';
 
 class GeigerPage extends StatefulWidget {
   const GeigerPage({super.key});
@@ -32,7 +31,9 @@ class _GeigerPageState extends State<GeigerPage>
     _pulseAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
         CurvedAnimation(parent: _pulseController, curve: Curves.easeOut));
     AudioService.instance.init();
+
     AudioService.instance.preload('audio/geiger_short.mp3');
+    AudioService.instance.preload('audio/geiger_long.mp3');
   }
 
   @override
@@ -49,6 +50,10 @@ class _GeigerPageState extends State<GeigerPage>
     _decayTimer?.cancel();
     _holding = true;
     _holdStart = DateTime.now();
+
+    final elapsedMs = DateTime.now().difference(_holdStart!).inMilliseconds;
+    _intensity = (elapsedMs / 10000).clamp(0.0, 1.0);
+    _playTick();
     _scheduleNextTick();
     setState(() {});
   }
@@ -70,7 +75,8 @@ class _GeigerPageState extends State<GeigerPage>
     final elapsedMs = DateTime.now().difference(_holdStart!).inMilliseconds;
     _intensity = (elapsedMs / 10000).clamp(0.0, 1.0);
 
-    final intervalMs = (800 - (740 * _intensity)).toInt().clamp(40, 1000);
+    final intervalMs =
+        (800 - (780 * pow(_intensity, 0.85))).toInt().clamp(25, 1000);
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       await _playTick();
@@ -80,8 +86,11 @@ class _GeigerPageState extends State<GeigerPage>
   }
 
   Future<void> _playTick() async {
-    final vol = (0.25 + 0.75 * _intensity).clamp(0.0, 1.0);
-    await AudioService.instance.playTick('audio/geiger_short.mp3', vol);
+    final vol = (0.15 + 0.85 * _intensity).clamp(0.0, 1.0);
+
+    final asset =
+        _intensity > 0.5 ? 'audio/geiger_short.mp3' : 'audio/geiger_long.mp3';
+    await AudioService.instance.playTick(asset, vol);
     _pulseController.forward(from: 0);
   }
 
@@ -138,7 +147,7 @@ class _GeigerPageState extends State<GeigerPage>
                         child: Text(_title,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                                fontSize: 22,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black)),
                       ),
@@ -150,7 +159,17 @@ class _GeigerPageState extends State<GeigerPage>
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: RadIndicator(intensity: _intensity),
+              child: Column(
+                children: [
+                  Text('${(_intensity * 300).round()}',
+                      style: const TextStyle(
+                          fontSize: 72,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87)),
+                  const SizedBox(height: 8),
+                  const Text('CPM', style: TextStyle(color: Colors.black54)),
+                ],
+              ),
             ),
             const Spacer(),
             Padding(
