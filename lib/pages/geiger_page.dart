@@ -13,12 +13,20 @@ class GeigerPage extends StatefulWidget {
 
 class _GeigerPageState extends State<GeigerPage>
     with SingleTickerProviderStateMixin {
-  String _title = 'Radiation Detector';
+  final List<String> _presets = [
+    'Radiation Normal',
+    'Radiation Elevated',
+    'Radiation Hot',
+    'Slayyyy Aura'
+  ];
+  String _selectedPreset = 'Radiation Normal';
+
+  bool _isBarbie = false;
+
   bool _holding = false;
-  DateTime? _holdStart;
   Timer? _tickTimer;
   Timer? _decayTimer;
-  double _intensity = 0.0;
+  double _value = 0.0;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnim;
@@ -49,10 +57,11 @@ class _GeigerPageState extends State<GeigerPage>
     if (_holding) return;
     _decayTimer?.cancel();
     _holding = true;
-    _holdStart = DateTime.now();
 
-    final elapsedMs = DateTime.now().difference(_holdStart!).inMilliseconds;
-    _intensity = (elapsedMs / 10000).clamp(0.0, 1.0);
+    final baseBump = _presetBase(_selectedPreset);
+    setState(() {
+      _value += baseBump * 0.5;
+    });
     _playTick();
     _scheduleNextTick();
     setState(() {});
@@ -61,24 +70,26 @@ class _GeigerPageState extends State<GeigerPage>
   void _stopHold() {
     _holding = false;
     _tickTimer?.cancel();
-    _decayTimer = Timer.periodic(const Duration(milliseconds: 140), (t) {
+
+    _decayTimer = Timer.periodic(const Duration(milliseconds: 220), (t) {
       setState(() {
-        _intensity = max(0.0, _intensity - 0.04);
+        _value = _value * 0.995;
+        if (_value < 0.001) _value = 0.0;
       });
-      if (_intensity <= 0) t.cancel();
+      if (_value <= 0) t.cancel();
     });
     setState(() {});
   }
 
   void _scheduleNextTick() {
     if (!_holding) return;
-    final elapsedMs = DateTime.now().difference(_holdStart!).inMilliseconds;
-    _intensity = (elapsedMs / 10000).clamp(0.0, 1.0);
 
-    final intervalMs =
-        (800 - (780 * pow(_intensity, 0.85))).toInt().clamp(25, 1000);
+    final intervalMs = (800 / (1 + (_value / 50))).toInt().clamp(20, 1000);
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
+      setState(() {
+        _value += 1.0 + pow(_value + 1, 0.35) * 0.6;
+      });
       await _playTick();
       if (_holding) _scheduleNextTick();
     });
@@ -86,48 +97,40 @@ class _GeigerPageState extends State<GeigerPage>
   }
 
   Future<void> _playTick() async {
-    final vol = (0.15 + 0.85 * _intensity).clamp(0.0, 1.0);
+    final percept = (1 - exp(-_value / 120)).clamp(0.0, 1.0);
+    final vol = (0.1 + 0.9 * percept).clamp(0.0, 1.0);
 
     final asset =
-        _intensity > 0.5 ? 'audio/geiger_short.mp3' : 'audio/geiger_long.mp3';
+        _value > 150 ? 'audio/geiger_short.mp3' : 'audio/geiger_long.mp3';
     await AudioService.instance.playTick(asset, vol);
     _pulseController.forward(from: 0);
   }
 
-  Future<void> _editTitle() async {
-    final controller = TextEditingController(text: _title);
-    final res = await showDialog<String>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            title: const Text('Edit title'),
-            content: TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: const InputDecoration(hintText: 'Enter new title')),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(null),
-                  child: const Text('Cancel')),
-              TextButton(
-                  onPressed: () =>
-                      Navigator.of(ctx).pop(controller.text.trim()),
-                  child: const Text('Save')),
-            ],
-          );
-        });
-
-    if (res != null && res.isNotEmpty) {
-      setState(() {
-        _title = res;
-      });
+  double _presetBase(String preset) {
+    switch (preset) {
+      case 'Radiation Elevated':
+        return 12.0;
+      case 'Radiation Hot':
+        return 45.0;
+      case 'Slayyyy Aura':
+        return 200.0;
+      case 'Radiation Normal':
+      default:
+        return 4.0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final percept = (1 - exp(-_value / 120)).clamp(0.0, 1.0);
+    final bgColor =
+        _isBarbie ? const Color(0xFFFFEAF0) : const Color(0xFF0A0C09);
+    final buttonInner = _isBarbie
+        ? [Colors.pink.shade200, Colors.pink.shade400]
+        : [Colors.black, Colors.orange.shade700];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -135,25 +138,31 @@ class _GeigerPageState extends State<GeigerPage>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  IconButton(
-                      onPressed: _editTitle,
-                      icon: const Icon(Icons.edit, color: Colors.black87)),
-                  Expanded(
-                    child: Center(
-                      child: ShaderMask(
-                        shaderCallback: (rect) => const LinearGradient(
-                                colors: [Color(0xFF2E7D32), Color(0xFF7CB342)])
-                            .createShader(rect),
-                        child: Text(_title,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black)),
-                      ),
-                    ),
+                  DropdownButton<String>(
+                    value: _selectedPreset,
+                    items: _presets
+                        .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                        .toList(),
+                    onChanged: (s) {
+                      if (s == null) return;
+                      setState(() {
+                        _selectedPreset = s;
+                        _value = _presetBase(s);
+                      });
+                    },
                   ),
-                  const SizedBox(width: 48),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      const Text('Stalker', style: TextStyle(fontSize: 12)),
+                      Switch(
+                        value: _isBarbie,
+                        onChanged: (v) => setState(() => _isBarbie = v),
+                        activeColor: Colors.pinkAccent,
+                      ),
+                      const Text('Barbie', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -161,13 +170,25 @@ class _GeigerPageState extends State<GeigerPage>
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Column(
                 children: [
-                  Text('${(_intensity * 300).round()}',
-                      style: const TextStyle(
-                          fontSize: 72,
+                  Text('${_value.round()}',
+                      style: TextStyle(
+                          fontSize: 84,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87)),
+                          color: _isBarbie
+                              ? Colors.pink.shade700
+                              : Colors.black87)),
                   const SizedBox(height: 8),
-                  const Text('CPM', style: TextStyle(color: Colors.black54)),
+                  Text(_isBarbie ? 'Slay/m²' : 'Slay/m2',
+                      style: TextStyle(
+                          color: _isBarbie
+                              ? Colors.pink.shade300
+                              : Colors.black54)),
+                  const SizedBox(height: 6),
+                  Text('Slayyyy aura',
+                      style: TextStyle(
+                          color: _isBarbie
+                              ? Colors.pinkAccent
+                              : Colors.green.shade700)),
                 ],
               ),
             ),
@@ -186,15 +207,17 @@ class _GeigerPageState extends State<GeigerPage>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
-                          colors: [Colors.white, Colors.orange.shade300],
+                          colors: buttonInner,
                           center: Alignment(-0.2, -0.4),
                           radius: 0.9),
                       boxShadow: [
                         BoxShadow(
-                            color:
-                                Colors.orange.withOpacity(min(0.6, _intensity)),
-                            blurRadius: 30 * _intensity,
-                            spreadRadius: 4 * _intensity)
+                            color: (_isBarbie
+                                    ? Colors.pinkAccent
+                                    : Colors.orange)
+                                .withOpacity((percept * 0.8).clamp(0.05, 0.9)),
+                            blurRadius: 30 * (percept * 1.2).clamp(0.05, 1.5),
+                            spreadRadius: 4 * (percept).clamp(0.02, 1.2))
                       ],
                     ),
                     child: Center(
