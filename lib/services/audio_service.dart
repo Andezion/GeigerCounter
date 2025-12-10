@@ -16,12 +16,16 @@ class AudioService {
   }
 
   Future<void> preload(String assetPath) async {
+    var path = assetPath;
+    if (path.startsWith('assets/')) path = path.substring('assets/'.length);
     for (final p in _players) {
       try {
-        await p.setSource(AssetSource(assetPath));
+        await p.setSource(AssetSource(path));
         await p.setVolume(0.0);
         await p.seek(Duration.zero);
-      } catch (_) {}
+      } catch (e) {
+        print('AudioService.preload failed for $path: $e');
+      }
     }
   }
 
@@ -30,8 +34,10 @@ class AudioService {
     final player = _players[_next % _players.length];
     _next++;
     try {
+      var path = assetPath;
+      if (path.startsWith('assets/')) path = path.substring('assets/'.length);
       await player.setVolume(volume);
-      await player.play(AssetSource(assetPath), volume: volume);
+      await player.play(AssetSource(path), volume: volume);
     } catch (_) {}
   }
 
