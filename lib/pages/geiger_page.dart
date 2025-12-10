@@ -17,6 +17,7 @@ class _GeigerPageState extends State<GeigerPage>
   String _selectedMode = 'Chernobyl mode';
 
   bool _holding = false;
+  bool _decaying = false;
   Timer? _tickTimer;
   Timer? _decayTimer;
   double _value = 0.0;
@@ -72,15 +73,33 @@ class _GeigerPageState extends State<GeigerPage>
   }
 
   void _stopHold() {
+    if (!_holding) return;
     _holding = false;
     _tickTimer?.cancel();
 
-    _decayTimer = Timer.periodic(const Duration(milliseconds: 220), (t) {
+    _decaying = true;
+    _scheduleDecayTick();
+  }
+
+  void _scheduleDecayTick() {
+    if (!_decaying) return;
+
+    final intervalMs = (900 / (1 + (_value / 60))).toInt().clamp(60, 3000);
+
+    _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
         _value = _value * 0.994;
         if (_value < 0.01) _value = 0.0;
       });
-      if (_value <= 0) t.cancel();
+
+      if (_value > 0) await _playTick();
+
+      if (_value <= 0.0) {
+        _decaying = false;
+        _tickTimer?.cancel();
+      } else {
+        _scheduleDecayTick();
+      }
     });
   }
 
