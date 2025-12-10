@@ -58,7 +58,7 @@ class _GeigerPageState extends State<GeigerPage>
     _decayTimer?.cancel();
     _holding = true;
 
-    final baseBump = _presetBase(_selectedPreset);
+    final baseBump = _baseForMode(_selectedMode);
     setState(() {
       _value += baseBump * 0.5;
     });
@@ -106,12 +106,8 @@ class _GeigerPageState extends State<GeigerPage>
     _pulseController.forward(from: 0);
   }
 
-  double _presetBase(String preset) {
-    switch (preset) {
-      case 'Radiation Elevated':
-        return 12.0;
-      case 'Radiation Hot':
-        return 45.0;
+  final List<String> _modes = ['Chernobyl mode', 'Slay mode'];
+  String _selectedMode = 'Chernobyl mode';
       case 'Slayyyy Aura':
         return 200.0;
       case 'Radiation Normal':
@@ -146,15 +142,15 @@ class _GeigerPageState extends State<GeigerPage>
                     onChanged: (s) {
                       if (s == null) return;
                       setState(() {
-                        _selectedPreset = s;
+                    value: _selectedMode,
                         _value = _presetBase(s);
                       });
                     },
                   ),
                   const Spacer(),
                   Row(
-                    children: [
-                      const Text('Stalker', style: TextStyle(fontSize: 12)),
+                        _selectedMode = s;
+                        _value = _baseForMode(s);
                       Switch(
                         value: _isBarbie,
                         onChanged: (v) => setState(() => _isBarbie = v),
