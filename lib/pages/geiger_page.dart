@@ -84,11 +84,12 @@ class _GeigerPageState extends State<GeigerPage>
   void _scheduleDecayTick() {
     if (!_decaying) return;
 
-    final intervalMs = (900 / (1 + (_value / 60))).toInt().clamp(60, 3000);
+    final intervalMs = (700 / (1 + (_value / 60))).toInt().clamp(40, 2000);
+    final decayMultiplier = 0.96;
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
-        _value = _value * 0.994;
+        _value = _value * decayMultiplier;
         if (_value < 0.01) _value = 0.0;
       });
 
@@ -155,22 +156,47 @@ class _GeigerPageState extends State<GeigerPage>
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              child: Row(
-                children: [
-                  DropdownButton<String>(
-                    value: _selectedMode,
-                    items: _modes
-                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                        .toList(),
-                    onChanged: (s) {
-                      if (s == null) return;
-                      setState(() {
-                        _selectedMode = s;
-                        _value = _baseForMode(s);
-                      });
-                    },
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSlay ? Colors.pink.shade50 : Colors.white24,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: isSlay ? Colors.pink.shade200 : Colors.white30),
                   ),
-                ],
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedMode,
+                      items: _modes
+                          .map((m) => DropdownMenuItem(
+                              value: m,
+                              child: Text(
+                                m,
+                                style: TextStyle(
+                                    color: isSlay
+                                        ? Colors.pink.shade800
+                                        : Colors.white),
+                              )))
+                          .toList(),
+                      onChanged: (s) {
+                        if (s == null) return;
+                        setState(() {
+                          _selectedMode = s;
+                          _value = _baseForMode(s);
+                        });
+                      },
+                      dropdownColor: bgColor,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isSlay ? Colors.pink.shade800 : Colors.white),
+                      iconEnabledColor:
+                          isSlay ? Colors.pink.shade600 : Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
             Padding(
