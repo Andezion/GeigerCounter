@@ -65,8 +65,8 @@ class _GeigerPageState extends State<GeigerPage>
 
     final base = _baseForMode(_selectedMode);
     setState(() {
-      // give a stronger immediate bump when user starts holding
-      _value += base * 1.0;
+      // modest immediate bump on start
+      _value += base * 0.5;
     });
 
     _playTick();
@@ -85,9 +85,9 @@ class _GeigerPageState extends State<GeigerPage>
   void _scheduleDecayTick() {
     if (!_decaying) return;
 
-    // shorten decay intervals and speed up the multiplier for faster drop
-    final intervalMs = (380 / (1 + (_value / 40))).toInt().clamp(20, 900);
-    final decayMultiplier = 0.86;
+    // make decay noticeably faster than growth: shorter intervals and stronger multiplier
+    final intervalMs = (300 / (1 + (_value / 30))).toInt().clamp(12, 700);
+    final decayMultiplier = 0.70;
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
@@ -109,11 +109,11 @@ class _GeigerPageState extends State<GeigerPage>
   void _scheduleNextTick() {
     if (!_holding) return;
 
-    final intervalMs = (420 / (1 + (_value / 80))).toInt().clamp(12, 800);
+    final intervalMs = (520 / (1 + (_value / 60))).toInt().clamp(18, 900);
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
-        _value += 1.6 + pow(_value + 1, 0.42) * 0.9;
+        _value += 0.9 + pow(_value + 1, 0.32) * 0.45;
       });
       await _playTick();
       if (_holding) _scheduleNextTick();
@@ -124,10 +124,7 @@ class _GeigerPageState extends State<GeigerPage>
     final percept = (1 - exp(-_value / 140)).clamp(0.0, 1.0);
     final vol = (0.12 + 0.88 * percept).clamp(0.0, 1.0);
 
-    final asset = _value > 140
-        ? 'assets/audio/geiger_short.mp3'
-        : 'assets/audio/geiger_long.mp3';
-    await AudioService.instance.playTick(asset, vol);
+    await AudioService.instance.playTick('assets/audio/geiger_short.mp3', vol);
     _pulseController.forward(from: 0);
   }
 
