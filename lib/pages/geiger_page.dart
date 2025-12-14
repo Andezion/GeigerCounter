@@ -65,7 +65,8 @@ class _GeigerPageState extends State<GeigerPage>
 
     final base = _baseForMode(_selectedMode);
     setState(() {
-      _value += base * 0.5;
+      // give a stronger immediate bump when user starts holding
+      _value += base * 1.0;
     });
 
     _playTick();
@@ -84,8 +85,9 @@ class _GeigerPageState extends State<GeigerPage>
   void _scheduleDecayTick() {
     if (!_decaying) return;
 
-    final intervalMs = (700 / (1 + (_value / 60))).toInt().clamp(40, 2000);
-    final decayMultiplier = 0.96;
+    // shorten decay intervals and speed up the multiplier for faster drop
+    final intervalMs = (380 / (1 + (_value / 40))).toInt().clamp(20, 900);
+    final decayMultiplier = 0.86;
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
@@ -107,11 +109,11 @@ class _GeigerPageState extends State<GeigerPage>
   void _scheduleNextTick() {
     if (!_holding) return;
 
-    final intervalMs = (800 / (1 + (_value / 60))).toInt().clamp(18, 1000);
+    final intervalMs = (420 / (1 + (_value / 80))).toInt().clamp(12, 800);
 
     _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
       setState(() {
-        _value += 1.0 + pow(_value + 1, 0.36) * 0.55;
+        _value += 1.6 + pow(_value + 1, 0.42) * 0.9;
       });
       await _playTick();
       if (_holding) _scheduleNextTick();
