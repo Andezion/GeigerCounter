@@ -17,7 +17,6 @@ class _GeigerPageState extends State<GeigerPage>
   String _selectedMode = 'Chernobyl mode';
 
   bool _holding = false;
-  bool _decaying = false;
   Timer? _tickTimer;
   Timer? _decayTimer;
   double _value = 0.0;
@@ -63,14 +62,17 @@ class _GeigerPageState extends State<GeigerPage>
     _decayTimer?.cancel();
     _holding = true;
 
-    final base = _baseForMode(_selectedMode);
-    setState(() {
-      // modest immediate bump on start
-      _value += base * 0.5;
-    });
+    const growthSpeed = 5.0;
+    const periodMs = 100;
+    final perTick = growthSpeed * (periodMs / 1000.0);
 
-    _playTick();
-    _scheduleNextTick();
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(Duration(milliseconds: periodMs), (t) async {
+      setState(() {
+        _value += perTick;
+      });
+      await _playTick();
+    });
   }
 
   void _stopHold() {
@@ -78,45 +80,22 @@ class _GeigerPageState extends State<GeigerPage>
     _holding = false;
     _tickTimer?.cancel();
 
-    _decaying = true;
-    _scheduleDecayTick();
-  }
+    const growthSpeed = 5.0;
+    final decaySpeed = growthSpeed * 2.0;
+    const periodMs = 100;
+    final perTick = decaySpeed * (periodMs / 1000.0);
 
-  void _scheduleDecayTick() {
-    if (!_decaying) return;
-
-    // make decay noticeably faster than growth: shorter intervals and stronger multiplier
-    final intervalMs = (300 / (1 + (_value / 30))).toInt().clamp(12, 700);
-    final decayMultiplier = 0.70;
-
-    _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
+    _decayTimer?.cancel();
+    _decayTimer = Timer.periodic(Duration(milliseconds: periodMs), (t) async {
       setState(() {
-        _value = _value * decayMultiplier;
-        if (_value < 0.01) _value = 0.0;
+        _value -= perTick;
+        if (_value <= 0) _value = 0.0;
       });
-
-      if (_value > 0) await _playTick();
-
-      if (_value <= 0.0) {
-        _decaying = false;
-        _tickTimer?.cancel();
+      if (_value > 0) {
+        await _playTick();
       } else {
-        _scheduleDecayTick();
+        _decayTimer?.cancel();
       }
-    });
-  }
-
-  void _scheduleNextTick() {
-    if (!_holding) return;
-
-    final intervalMs = (520 / (1 + (_value / 60))).toInt().clamp(18, 900);
-
-    _tickTimer = Timer(Duration(milliseconds: intervalMs), () async {
-      setState(() {
-        _value += 0.9 + pow(_value + 1, 0.32) * 0.45;
-      });
-      await _playTick();
-      if (_holding) _scheduleNextTick();
     });
   }
 
@@ -275,8 +254,9 @@ class _GeigerPageState extends State<GeigerPage>
                       boxShadow: [
                         BoxShadow(
                             color: (isSlay ? Colors.pinkAccent : Colors.orange)
-                                .withOpacity(
-                                    (percept * 0.85).clamp(0.05, 0.95)),
+                                .withAlpha(
+                                    ((percept * 0.85).clamp(0.05, 0.95) * 255)
+                                        .round()),
                             blurRadius: 30 * (percept * 1.2).clamp(0.05, 1.8),
                             spreadRadius: 6 * (percept).clamp(0.02, 1.5))
                       ],

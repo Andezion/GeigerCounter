@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 class AudioService {
   AudioService._();
@@ -24,7 +25,9 @@ class AudioService {
         await p.setVolume(0.0);
         await p.seek(Duration.zero);
       } catch (e) {
-        print('AudioService.preload failed for $path: $e');
+        if (kDebugMode) {
+          print('AudioService.preload failed for $path: $e');
+        }
       }
     }
   }
