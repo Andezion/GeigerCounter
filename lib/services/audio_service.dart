@@ -44,6 +44,24 @@ class AudioService {
     } catch (_) {}
   }
 
+  Future<void> playTickWithRate(String assetPath, double volume,
+      {double? rate}) async {
+    if (_players.isEmpty) await init();
+    final player = _players[_next % _players.length];
+    _next++;
+    try {
+      var path = assetPath;
+      if (path.startsWith('assets/')) path = path.substring('assets/'.length);
+      if (rate != null) {
+        try {
+          await player.setPlaybackRate(rate);
+        } catch (_) {}
+      }
+      await player.setVolume(volume);
+      await player.play(AssetSource(path), volume: volume);
+    } catch (_) {}
+  }
+
   Future<void> dispose() async {
     for (final p in _players) {
       try {
