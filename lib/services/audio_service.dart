@@ -8,7 +8,7 @@ class AudioService {
   final List<AudioPlayer> _players = [];
   int _next = 0;
 
-  Future<void> init({int pool = 3}) async {
+  Future<void> init({int pool = 6}) async {
     if (_players.isNotEmpty) return;
     for (var i = 0; i < pool; i++) {
       final p = AudioPlayer();

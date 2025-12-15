@@ -89,10 +89,11 @@ class _GeigerPageState extends State<GeigerPage>
 
   int _intervalForValue() {
     const base = 160.0;
-    const minI = 30.0;
+    const minI = 20.0;
     final capped = _value.clamp(0.0, 140.0);
     final factor = (capped / 140.0);
-    final interval = (minI + (base - minI) * (1.0 - factor));
+
+    final interval = (minI + (base - minI) * (1.0 - factor * factor));
     return interval.round();
   }
 
