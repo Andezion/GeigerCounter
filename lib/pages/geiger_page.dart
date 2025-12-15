@@ -20,6 +20,7 @@ class _GeigerPageState extends State<GeigerPage>
   Timer? _tickTimer;
   Timer? _decayTimer;
   double _value = 0.0;
+  bool _tickScheduled = false;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnim;
@@ -62,49 +63,79 @@ class _GeigerPageState extends State<GeigerPage>
     _decayTimer?.cancel();
     _holding = true;
 
-    const growthSpeed = 5.0;
-    const periodMs = 100;
-    final perTick = growthSpeed * (periodMs / 1000.0);
-
     _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(Duration(milliseconds: periodMs), (t) async {
-      setState(() {
-        _value += perTick;
-      });
-      await _playTick();
-    });
+    _tickScheduled = false;
+    _scheduleHoldTick();
   }
 
   void _stopHold() {
     if (!_holding) return;
     _holding = false;
     _tickTimer?.cancel();
-
-    const growthSpeed = 5.0;
-    final decaySpeed = growthSpeed * 2.0;
-    const periodMs = 100;
-    final perTick = decaySpeed * (periodMs / 1000.0);
-
     _decayTimer?.cancel();
-    _decayTimer = Timer.periodic(Duration(milliseconds: periodMs), (t) async {
-      setState(() {
-        _value -= perTick;
-        if (_value <= 0) _value = 0.0;
-      });
-      if (_value > 0) {
-        await _playTick();
-      } else {
-        _decayTimer?.cancel();
-      }
-    });
+    _scheduleDecayTick();
   }
 
   Future<void> _playTick() async {
     final percept = (1 - exp(-_value / 140)).clamp(0.0, 1.0);
     final vol = (0.12 + 0.88 * percept).clamp(0.0, 1.0);
+    final rate = (1.0 + percept * 1.6).clamp(0.6, 3.0);
 
-    await AudioService.instance.playTick('assets/audio/geiger_short.mp3', vol);
+    AudioService.instance
+        .playTickWithRate('assets/audio/geiger_short.mp3', vol, rate: rate);
+
     _pulseController.forward(from: 0);
+  }
+
+  int _intervalForValue() {
+    const base = 160.0;
+    const minI = 30.0;
+    final capped = _value.clamp(0.0, 140.0);
+    final factor = (capped / 140.0);
+    final interval = (minI + (base - minI) * (1.0 - factor));
+    return interval.round();
+  }
+
+  void _scheduleHoldTick() {
+    if (!_holding) return;
+    if (_tickScheduled) return;
+    _tickScheduled = true;
+    final delayMs = _intervalForValue();
+    _tickTimer = Timer(Duration(milliseconds: delayMs), () async {
+      _tickScheduled = false;
+      if (!_holding) return;
+      final delay = delayMs;
+      const growthSpeed = 5.0;
+      final perTick = growthSpeed * (delay / 1000.0);
+      setState(() {
+        _value += perTick;
+      });
+      _playTick();
+      _scheduleHoldTick();
+    });
+  }
+
+  void _scheduleDecayTick() {
+    if (_holding) return;
+    _decayTimer?.cancel();
+    final delayMs = _intervalForValue();
+    _decayTimer = Timer(Duration(milliseconds: delayMs), () async {
+      if (_holding) return;
+      final delay = delayMs;
+      const growthSpeed = 5.0;
+      final decaySpeed = growthSpeed * 2.0;
+      final perTick = decaySpeed * (delay / 1000.0);
+      setState(() {
+        _value -= perTick;
+        if (_value <= 0) _value = 0.0;
+      });
+      if (_value > 0) {
+        _playTick();
+        _scheduleDecayTick();
+      } else {
+        _decayTimer?.cancel();
+      }
+    });
   }
 
   @override
