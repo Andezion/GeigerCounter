@@ -13,7 +13,7 @@ class GeigerPage extends StatefulWidget {
 
 class _GeigerPageState extends State<GeigerPage>
     with SingleTickerProviderStateMixin {
-  final List<String> _modes = ['Chernobyl mode', 'Slay mode'];
+  final List<String> _modes = ['Chernobyl mode', 'Slay mode', 'Freak mode'];
   String _selectedMode = 'Chernobyl mode';
 
   bool _holding = false;
@@ -52,6 +52,8 @@ class _GeigerPageState extends State<GeigerPage>
     switch (mode) {
       case 'Slay mode':
         return 120.0;
+      case 'Freak mode':
+        return 24.0;
       case 'Chernobyl mode':
       default:
         return 6.0;
@@ -142,22 +144,61 @@ class _GeigerPageState extends State<GeigerPage>
   @override
   Widget build(BuildContext context) {
     final isSlay = _selectedMode == 'Slay mode';
+    final isFreak = _selectedMode == 'Freak mode';
 
-    final bgColor = isSlay ? const Color(0xFFFFEEF4) : const Color(0xFF2F2A1F);
+    final bgColor = isSlay
+        ? const Color(0xFFFFEEF4)
+        : isFreak
+            ? const Color(0xFF0F1020)
+            : const Color(0xFF2F2A1F);
+
     final titleGradient = isSlay
         ? const LinearGradient(colors: [Color(0xFFEF9ABF), Color(0xFFFFC6DD)])
-        : const LinearGradient(colors: [Color(0xFF6B8B3A), Color(0xFFD4A017)]);
+        : isFreak
+            ? const LinearGradient(colors: [
+                Colors.red,
+                Colors.orange,
+                Colors.yellow,
+                Colors.green,
+                Colors.blue,
+                Colors.indigo,
+                Colors.purple
+              ])
+            : const LinearGradient(
+                colors: [Color(0xFF6B8B3A), Color(0xFFD4A017)]);
+
     final buttonInner = isSlay
         ? [Colors.pink.shade200, Colors.pink.shade400]
-        : [const Color(0xFF3E2F1B), const Color(0xFF7A9B3A)];
+        : isFreak
+            ? [Colors.purple.shade400, Colors.teal.shade400]
+            : [const Color(0xFF3E2F1B), const Color(0xFF7A9B3A)];
+
+    final ddTextColor = isSlay
+        ? Colors.pink.shade800
+        : isFreak
+            ? Colors.white
+            : Colors.white;
+    final ddIconColor = isSlay ? Colors.pink.shade600 : Colors.white;
 
     final percept = (1 - exp(-_value / 140)).clamp(0.0, 1.0);
 
-    final leftEmoji = isSlay ? '🎀' : '☢️';
+    final leftEmoji = isSlay
+        ? '🎀'
+        : isFreak
+            ? '🌈'
+            : '☢️';
     final rightEmoji = leftEmoji;
 
-    final unit = isSlay ? 'Slay/m²' : 'µSv/h';
-    final subtitle = isSlay ? 'Slayyyy aura' : 'Chernobyl detector';
+    final unit = isSlay
+        ? 'Slay/m²'
+        : isFreak
+            ? 'freakness/m²'
+            : 'µSv/h';
+    final subtitle = isSlay
+        ? 'Slayyyy aura'
+        : isFreak
+            ? 'Freak detector'
+            : 'Chernobyl detector';
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -171,10 +212,18 @@ class _GeigerPageState extends State<GeigerPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSlay ? Colors.pink.shade50 : Colors.white24,
+                    color: isSlay
+                        ? Colors.pink.shade50
+                        : isFreak
+                            ? Colors.white10
+                            : Colors.white24,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: isSlay ? Colors.pink.shade200 : Colors.white30),
+                        color: isSlay
+                            ? Colors.pink.shade200
+                            : isFreak
+                                ? Colors.white24
+                                : Colors.white30),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -184,10 +233,7 @@ class _GeigerPageState extends State<GeigerPage>
                               value: m,
                               child: Text(
                                 m,
-                                style: TextStyle(
-                                    color: isSlay
-                                        ? Colors.pink.shade800
-                                        : Colors.white),
+                                style: TextStyle(color: ddTextColor),
                               )))
                           .toList(),
                       onChanged: (s) {
@@ -201,9 +247,8 @@ class _GeigerPageState extends State<GeigerPage>
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isSlay ? Colors.pink.shade800 : Colors.white),
-                      iconEnabledColor:
-                          isSlay ? Colors.pink.shade600 : Colors.white,
+                          color: ddTextColor),
+                      iconEnabledColor: ddIconColor,
                     ),
                   ),
                 ),
@@ -220,8 +265,8 @@ class _GeigerPageState extends State<GeigerPage>
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
-                      color: isSlay ? Colors.white : Colors.black,
-                      shadows: isSlay
+                      color: (isSlay || isFreak) ? Colors.white : Colors.black,
+                      shadows: (isSlay || isFreak)
                           ? [
                               const Shadow(
                                   color: Colors.pinkAccent, blurRadius: 8)
@@ -246,7 +291,9 @@ class _GeigerPageState extends State<GeigerPage>
                       fontWeight: FontWeight.w900,
                       color: isSlay
                           ? Colors.pink.shade700
-                          : Colors.yellow.shade100,
+                          : isFreak
+                              ? Colors.cyan.shade200
+                              : Colors.yellow.shade100,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -254,14 +301,18 @@ class _GeigerPageState extends State<GeigerPage>
                       style: TextStyle(
                           color: isSlay
                               ? Colors.pink.shade300
-                              : Colors.yellow.shade200,
+                              : isFreak
+                                  ? Colors.cyan.shade200
+                                  : Colors.yellow.shade200,
                           fontSize: 16)),
                   const SizedBox(height: 6),
                   Text(subtitle,
                       style: TextStyle(
                           color: isSlay
                               ? Colors.pinkAccent
-                              : Colors.green.shade200)),
+                              : isFreak
+                                  ? Colors.cyanAccent
+                                  : Colors.green.shade200)),
                 ],
               ),
             ),
