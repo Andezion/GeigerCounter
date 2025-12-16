@@ -51,12 +51,12 @@ class _GeigerPageState extends State<GeigerPage>
   double _baseForMode(String mode) {
     switch (mode) {
       case 'Slay mode':
-        return 120.0;
+        return 0.0;
       case 'Freak mode':
-        return 24.0;
+        return 0.0;
       case 'Chernobyl mode':
       default:
-        return 6.0;
+        return 0.0;
     }
   }
 
