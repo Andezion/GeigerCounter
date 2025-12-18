@@ -13,7 +13,7 @@ An atmospheric Flutter app inspired by the aesthetic of "xanax and beer": quiet,
 
 ## General Info
 
-`drunk_app` is a minimalist experience-focused application that aims to create a gentle, contemplative mood through sound, visuals, and simple interactions. The app provides brief ambient audio, soft visual indicators, and a simple pause/timer feature to help you slow down for a few minutes.
+`DrunkApp` is a minimalist experience-focused application that aims to create a gentle, contemplative mood through sound, visuals, and simple interactions. The app provides brief ambient audio, soft visual indicators, and a simple pause/timer feature to help you slow down for a few minutes.
 
 Key ideas:
 
