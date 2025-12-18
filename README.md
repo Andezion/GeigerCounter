@@ -1,4 +1,4 @@
-# drunk_app
+# DrunkApp
 
 An atmospheric Flutter app inspired by the aesthetic of "xanax and beer": quiet, sleepy evenings and small moments of pause. This project is an artistic experiment — not medical advice, endorsement, or encouragement of substance use.
 
