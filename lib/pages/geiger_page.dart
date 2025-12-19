@@ -212,30 +212,57 @@ class _GeigerPageState extends State<GeigerPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSlay
-                        ? Colors.pink.shade50
-                        : isFreak
-                            ? Colors.white10
-                            : Colors.white24,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: isSlay
-                            ? Colors.pink.shade200
-                            : isFreak
-                                ? Colors.white24
-                                : Colors.white30),
+                    gradient: LinearGradient(
+                        colors: buttonInner,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 10,
+                          offset: const Offset(0, 6)),
+                    ],
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedMode,
-                      items: _modes
-                          .map((m) => DropdownMenuItem(
-                              value: m,
-                              child: Text(
-                                m,
-                                style: TextStyle(color: ddTextColor),
-                              )))
-                          .toList(),
+                      elevation: 8,
+                      icon: Icon(Icons.keyboard_arrow_down,
+                          color: ddIconColor, size: 26),
+                      items: _modes.map((m) {
+                        final Map<String, String> emojis = {
+                          'Chernobyl mode': '☢️',
+                          'Slay mode': '🎀',
+                          'Freak mode': '🌈'
+                        };
+                        final isSelected = m == _selectedMode;
+                        return DropdownMenuItem(
+                          value: m,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 8),
+                            child: Row(
+                              children: [
+                                Text(emojis[m] ?? '',
+                                    style: const TextStyle(fontSize: 18)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(m,
+                                      style: TextStyle(
+                                          color: ddTextColor,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w600)),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check,
+                                      color: ddIconColor, size: 18)
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                       onChanged: (s) {
                         if (s == null) return;
                         setState(() {
@@ -249,6 +276,28 @@ class _GeigerPageState extends State<GeigerPage>
                           fontWeight: FontWeight.w600,
                           color: ddTextColor),
                       iconEnabledColor: ddIconColor,
+                      selectedItemBuilder: (ctx) {
+                        final Map<String, String> emojis = {
+                          'Chernobyl mode': '☢️',
+                          'Slay mode': '🎀',
+                          'Freak mode': '🌈'
+                        };
+                        return _modes.map((m) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(emojis[m] ?? '',
+                                  style: const TextStyle(fontSize: 18)),
+                              const SizedBox(width: 8),
+                              Text(m,
+                                  style: TextStyle(
+                                      color: ddTextColor,
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(width: 8),
+                            ],
+                          );
+                        }).toList();
+                      },
                     ),
                   ),
                 ),
