@@ -34,3 +34,4 @@ linux/
 macos/
 windows/
 web/    
+pubspec.lock
