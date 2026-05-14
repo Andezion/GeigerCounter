@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/geiger_page.dart';
+import 'pages/splash_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
-      home: const GeigerPage(),
+      home: const SplashPage(),
     );
   }
 }
