@@ -30,3 +30,7 @@ app.*.map.json
 .metadata
 ios/
 android/
+linux/
+macos/
+windows/
+web/    
